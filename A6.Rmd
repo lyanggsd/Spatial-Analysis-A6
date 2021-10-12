@@ -1,0 +1,124 @@
+---
+title: "A6"
+author: "Le Yang"
+date: "10/12/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+library(leaflet)
+library(sf)
+library(tidyverse)
+library(tidycensus)
+library(ggthemes)
+library(ggspatial)
+library(htmlwidgets)
+library(tidytransit)
+library(magrittr)
+library(dplyr)
+```
+
+```{r}
+Albany_Vacancy <- get_decennial(geography = "block",
+                          state = "NY", county = "Albany",
+                          year = 2010,
+                          output = "wide",
+                          variables = c(tot_unit = 'H001001',
+                                        tot_vac = 'H005001'),
+                          geometry = TRUE)
+```
+
+```{r}
+Albany_Vacancy <- Albany_Vacancy %>%
+  mutate(pct_Vacancy = tot_vac / tot_unit) %>%
+  filter(tot_unit>0)
+```
+
+```{r}
+NY_state_plane <- "+proj=tmerc +lat_0=40 +lon_0=-76.58333333333333 +k=0.9999375 +x_0=249999.9998983998 +y_0=0 +ellps=GRS80 +datum=NAD83 +to_meter=0.3048006096012192 +no_defs"
+
+ggplot(Albany_Vacancy) +
+  annotation_map_tile(zoomin = 0, progress = "none", type = "stamenbw") +
+  geom_sf(color = NA, aes(fill = pct_Vacancy), alpha = 0.7) +
+  coord_sf(crs = NY_state_plane) +
+  scale_fill_continuous(low="cornsilk", high="darkgreen", 
+                       na.value=NA,
+                       name = "Percent of Unit\nidentifying as Vacant",
+                       breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1),
+                       labels = c("0", "20%", "40%", "60%", "80%", "100%")) +
+  theme_void() 
+```
+
+```{r}
+NY_Vacancy_palette <- colorNumeric(c("cornsilk", "darkgreen"), Albany_Vacancy$pct_Vacancy)
+
+Vacancy_map1 <- leaflet(Albany_Vacancy) %>%
+  addProviderTiles("Stamen.TonerLite") %>%
+  addPolygons(stroke = FALSE, fillOpacity = 0.7,
+    color = ~NY_Vacancy_palette(pct_Vacancy)) %>%
+  addLegend("bottomright", pal = NY_Vacancy_palette, values = ~pct_Vacancy,
+    title = "Percent of unit<br/>identifying as vacancy",
+    labFormat = labelFormat(suffix = "%",
+                            transform = function(x) 100 * x),
+    opacity = 1)
+
+Vacancy_map1
+```
+
+```{r}
+Vacancy_map2 <- leaflet(Albany_Vacancy) %>%
+  addProviderTiles("Stamen.TonerLite") %>%
+  addPolygons(color = ~NY_Vacancy_palette(pct_Vacancy), stroke = FALSE, fillOpacity = 0.7,
+              highlightOptions = highlightOptions(fillColor = "darkorange", fillOpacity = 0.9),
+              label = "This is a label",
+              popup = "This is a popup") %>%
+    addLegend("bottomright", pal = NY_Vacancy_palette, values = ~pct_Vacancy,
+    title = "Percent of unit<br/>identifying as vacancy",
+    labFormat = labelFormat(suffix = "%",
+                            transform = function(x) 100 * x),
+    opacity = 1)
+
+Vacancy_map2
+```
+
+```{r}
+Vacancy_map3 <- leaflet(Albany_Vacancy) %>%
+  addProviderTiles("Stamen.TonerLite") %>%
+  addPolygons(color = ~NY_Vacancy_palette(pct_Vacancy), stroke = FALSE, fillOpacity = 0.7,
+              highlightOptions = highlightOptions(fillColor = "darkorange", fillOpacity = 0.9),
+              label = Albany_Vacancy$NAME,
+              popup = paste("Total unit: ", Albany_Vacancy$tot_unit, "<br/>",
+                            "Vacancy unit: ", Albany_Vacancy$tot_vac, " (", 
+                            round(Albany_Vacancy$pct_Vacancy * 100, 1), "%)", sep = "")) %>%
+    addLegend("bottomright", pal = NY_Vacancy_palette, values = ~pct_Vacancy,
+    title = "Percent of unit<br/>identifying as vacant",
+    labFormat = labelFormat(suffix = "%",
+                            transform = function(x) 100 * x),
+    opacity = 1)
+
+Vacancy_map3
+```
+
