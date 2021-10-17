@@ -122,3 +122,41 @@ Vacancy_map3 <- leaflet(Albany_Vacancy) %>%
 Vacancy_map3
 ```
 
+```{r}
+saveWidget(Vacancy_map3, file="tory_vacancy.html")
+```
+
+```{r}
+wfh_Albany <- get_acs(geography = "tract", county = "Albany", state = "NY", 
+                           year = 2019, survey = "acs5",
+                           variables = c(tot_wrkrs = "B08604_001", hm_wrkrs = "B08528_061"),
+                           output = "wide", geometry = TRUE) 
+```
+
+```{r}
+wfh_Albany <- wfh_Albany %>%
+  select(-tot_wrkrsM, -hm_wrkrsM) %>%
+  filter(tot_wrkrsE > 0) %>%
+  mutate(pct_wfh = round(100 * hm_wrkrsE / tot_wrkrsE, 1))
+```
+
+```{r}
+wfh_palette <- colorNumeric(c("pink", "lightblue"),
+                                wfh_Albany$pct_wfh)
+
+wfh_map <- leaflet(wfh_Albany) %>%
+  addProviderTiles("Stamen.TonerLite") %>%
+  addPolygons(fillColor = ~wfh_palette(pct_wfh), weight = 1, color = "gray", fillOpacity = 0.7,
+              highlightOptions = highlightOptions(fillColor = "yellow", fillOpacity = 0.9),
+              label = wfh_Albany$NAME,
+              popup = paste("Total workers: ", wfh_Albany$tot_wrkrsE, "<br/>",
+                            "wfh workers: ", wfh_Albany$hm_wrkrsE, " (",
+                            wfh_Albany$pct_wfh, "%)", sep = "")) %>%
+    addLegend("bottomright", pal = wfh_palette, values = ~pct_wfh,
+    title = "Percent of workers<br/>work from home",
+    labFormat = labelFormat(suffix = "%"),
+    opacity = 1)
+
+wfh_map
+```
+
