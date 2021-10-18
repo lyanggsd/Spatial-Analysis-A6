@@ -1,0 +1,149 @@
+---
+title: "A6"
+author: "Le Yang"
+date: "10/12/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Troy, NY's vacant property and male asian demography
+
+This is Le Yang's assignment 6 for Spatial Analysis.The first map shows the vacancy unit within Albany county. The second map shows the number of male Asians among the total number of Asians in the same area. 
+
+```{r load packages, message=FALSE, echo=FALSE, warning=FALSE,results='hide',fig.show='hide'}
+library(leaflet)
+library(sf)
+library(tidyverse)
+library(tidycensus)
+library(ggthemes)
+library(ggspatial)
+library(htmlwidgets)
+library(tidytransit)
+library(magrittr)
+library(dplyr)
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE,results='hide',fig.show='hide'}
+Albany_Vacancy <- get_decennial(geography = "block",
+                          state = "NY", county = "Albany",
+                          year = 2010,
+                          output = "wide",
+                          variables = c(tot_unit = 'H001001',
+                                        tot_vac = 'H005001'),
+                          geometry = TRUE)
+```
+
+```{r, echo=FALSE, message=FALSE}
+Albany_Vacancy <- Albany_Vacancy %>%
+  mutate(pct_Vacancy = tot_vac / tot_unit) %>%
+  filter(tot_unit>0)
+```
+
+```{r, echo=FALSE, message=FALSE, fig.show='hide',results='hide', warning=FALSE}
+NY_state_plane <- "+proj=tmerc +lat_0=40 +lon_0=-76.58333333333333 +k=0.9999375 +x_0=249999.9998983998 +y_0=0 +ellps=GRS80 +datum=NAD83 +to_meter=0.3048006096012192 +no_defs"
+
+ggplot(Albany_Vacancy) +
+  annotation_map_tile(zoomin = 0, progress = "none", type = "stamenbw") +
+  geom_sf(color = NA, aes(fill = pct_Vacancy), alpha = 0.7) +
+  coord_sf(crs = NY_state_plane) +
+  scale_fill_continuous(low="cornsilk", high="darkgreen", 
+                       na.value=NA,
+                       name = "Percent of Unit\nidentifying as Vacant",
+                       breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1),
+                       labels = c("0", "20%", "40%", "60%", "80%", "100%")) +
+  theme_void() 
+```
+
+```{r, echo=FALSE, message=FALSE, fig.show='hide', warning=FALSE, results='hide'}
+NY_Vacancy_palette <- colorNumeric(c("cornsilk", "darkgreen"), Albany_Vacancy$pct_Vacancy)
+
+Vacancy_map1 <- leaflet(Albany_Vacancy) %>%
+  addProviderTiles("Stamen.TonerLite") %>%
+  addPolygons(stroke = FALSE, fillOpacity = 0.7,
+    color = ~NY_Vacancy_palette(pct_Vacancy)) %>%
+  addLegend("bottomright", pal = NY_Vacancy_palette, values = ~pct_Vacancy,
+    title = "Percent of unit<br/>identifying as vacancy",
+    labFormat = labelFormat(suffix = "%",
+                            transform = function(x) 100 * x),
+    opacity = 1)
+
+Vacancy_map1
+```
+
+```{r, echo=FALSE, message=FALSE, fig.show='hide', warning=FALSE, results='hide'}
+Vacancy_map2 <- leaflet(Albany_Vacancy) %>%
+  addProviderTiles("Stamen.TonerLite") %>%
+  addPolygons(color = ~NY_Vacancy_palette(pct_Vacancy), stroke = FALSE, fillOpacity = 0.7,
+              highlightOptions = highlightOptions(fillColor = "darkorange", fillOpacity = 0.9),
+              label = "This is a label",
+              popup = "This is a popup") %>%
+    addLegend("bottomright", pal = NY_Vacancy_palette, values = ~pct_Vacancy,
+    title = "Percent of unit<br/>identifying as vacancy",
+    labFormat = labelFormat(suffix = "%",
+                            transform = function(x) 100 * x),
+    opacity = 1)
+
+Vacancy_map2
+```
+
+```{r, echo=FALSE, message=FALSE}
+Vacancy_map3 <- leaflet(Albany_Vacancy) %>%
+  addProviderTiles("Stamen.TonerLite") %>%
+  addPolygons(color = ~NY_Vacancy_palette(pct_Vacancy), stroke = FALSE, fillOpacity = 0.7,
+              highlightOptions = highlightOptions(fillColor = "darkorange", fillOpacity = 0.9),
+              label = Albany_Vacancy$NAME,
+              popup = paste("Total unit: ", Albany_Vacancy$tot_unit, "<br/>",
+                            "Vacancy unit: ", Albany_Vacancy$tot_vac, " (", 
+                            round(Albany_Vacancy$pct_Vacancy * 100, 1), "%)", sep = "")) %>%
+    addLegend("bottomright", pal = NY_Vacancy_palette, values = ~pct_Vacancy,
+    title = "Percent of unit<br/>identifying as vacant",
+    labFormat = labelFormat(suffix = "%",
+                            transform = function(x) 100 * x),
+    opacity = 1)
+
+Vacancy_map3
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE,results='hide',fig.show='hide'}
+saveWidget(Vacancy_map3, file="tory_vacancy.html")
+```
+
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE,results='hide',fig.show='hide'}
+maleasia_Albany <- get_acs(geography = "tract", county = "Albany", state = "NY", 
+                           year = 2019, survey = "acs5",
+                           variables = c(tot_asia = "B01001D_001", male_asia = "B01001D_002"),
+                           output = "wide", geometry = TRUE) 
+```
+
+```{r, echo=FALSE, message=FALSE}
+maleasia_Albany <- maleasia_Albany %>%
+  select(-tot_asiaM, -male_asiaM) %>%
+  filter(tot_asiaE > 0) %>%
+  mutate(pct_maleasia = round(100 * male_asiaE / tot_asiaE, 1))
+```
+
+```{r, echo=FALSE, message=FALSE}
+maleasia_palette <- colorNumeric(c("pink", "lightblue"),
+                                maleasia_Albany$pct_maleasia)
+
+maleasia_map <- leaflet(maleasia_Albany) %>%
+  addProviderTiles("Stamen.TonerLite") %>%
+  addPolygons(fillColor = ~maleasia_palette(pct_maleasia), weight = 1, color = "gray", fillOpacity = 0.7,
+              highlightOptions = highlightOptions(fillColor = "yellow", fillOpacity = 0.9),
+              label = maleasia_Albany$NAME,
+              popup = paste("Total asian: ", maleasia_Albany$tot_asiaE, "<br/>",
+                            "Male asian: ", maleasia_Albany$male_asiaE, " (",
+                            maleasia_Albany$pct_maleasia, "%)", sep = "")) %>%
+    addLegend("bottomright", pal = maleasia_palette, values = ~pct_maleasia,
+    title = "Percent of male<br/>in asian population",
+    labFormat = labelFormat(suffix = "%"),
+    opacity = 1)
+
+maleasia_map
+```
+

@@ -9,26 +9,11 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+## Troy, NY's vacant property and male asian demography
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+This is Le Yang's assignment 6 for Spatial Analysis.The first map shows the vacancy unit within Albany county. The second map shows the number of male Asians among the total number of Asians in the same area. 
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
-```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
-```{r}
+```{r load packages, message=FALSE, echo=FALSE, warning=FALSE,results='hide',fig.show='hide'}
 library(leaflet)
 library(sf)
 library(tidyverse)
@@ -41,7 +26,7 @@ library(magrittr)
 library(dplyr)
 ```
 
-```{r}
+```{r, echo=FALSE, message=FALSE, warning=FALSE,results='hide',fig.show='hide'}
 Albany_Vacancy <- get_decennial(geography = "block",
                           state = "NY", county = "Albany",
                           year = 2010,
@@ -51,13 +36,13 @@ Albany_Vacancy <- get_decennial(geography = "block",
                           geometry = TRUE)
 ```
 
-```{r}
+```{r, echo=FALSE, message=FALSE}
 Albany_Vacancy <- Albany_Vacancy %>%
   mutate(pct_Vacancy = tot_vac / tot_unit) %>%
   filter(tot_unit>0)
 ```
 
-```{r}
+```{r, echo=FALSE, message=FALSE, fig.show='hide',results='hide', warning=FALSE}
 NY_state_plane <- "+proj=tmerc +lat_0=40 +lon_0=-76.58333333333333 +k=0.9999375 +x_0=249999.9998983998 +y_0=0 +ellps=GRS80 +datum=NAD83 +to_meter=0.3048006096012192 +no_defs"
 
 ggplot(Albany_Vacancy) +
@@ -72,7 +57,7 @@ ggplot(Albany_Vacancy) +
   theme_void() 
 ```
 
-```{r}
+```{r, echo=FALSE, message=FALSE, fig.show='hide', warning=FALSE, results='hide'}
 NY_Vacancy_palette <- colorNumeric(c("cornsilk", "darkgreen"), Albany_Vacancy$pct_Vacancy)
 
 Vacancy_map1 <- leaflet(Albany_Vacancy) %>%
@@ -88,7 +73,7 @@ Vacancy_map1 <- leaflet(Albany_Vacancy) %>%
 Vacancy_map1
 ```
 
-```{r}
+```{r, echo=FALSE, message=FALSE, fig.show='hide', warning=FALSE, results='hide'}
 Vacancy_map2 <- leaflet(Albany_Vacancy) %>%
   addProviderTiles("Stamen.TonerLite") %>%
   addPolygons(color = ~NY_Vacancy_palette(pct_Vacancy), stroke = FALSE, fillOpacity = 0.7,
@@ -104,7 +89,7 @@ Vacancy_map2 <- leaflet(Albany_Vacancy) %>%
 Vacancy_map2
 ```
 
-```{r}
+```{r, echo=FALSE, message=FALSE}
 Vacancy_map3 <- leaflet(Albany_Vacancy) %>%
   addProviderTiles("Stamen.TonerLite") %>%
   addPolygons(color = ~NY_Vacancy_palette(pct_Vacancy), stroke = FALSE, fillOpacity = 0.7,
@@ -122,27 +107,27 @@ Vacancy_map3 <- leaflet(Albany_Vacancy) %>%
 Vacancy_map3
 ```
 
-```{r}
+```{r, echo=FALSE, message=FALSE, warning=FALSE,results='hide',fig.show='hide'}
 saveWidget(Vacancy_map3, file="tory_vacancy.html")
 ```
 
 
 
-```{r}
+```{r, echo=FALSE, message=FALSE, warning=FALSE,results='hide',fig.show='hide'}
 maleasia_Albany <- get_acs(geography = "tract", county = "Albany", state = "NY", 
                            year = 2019, survey = "acs5",
                            variables = c(tot_asia = "B01001D_001", male_asia = "B01001D_002"),
                            output = "wide", geometry = TRUE) 
 ```
 
-```{r}
+```{r, echo=FALSE, message=FALSE}
 maleasia_Albany <- maleasia_Albany %>%
   select(-tot_asiaM, -male_asiaM) %>%
   filter(tot_asiaE > 0) %>%
   mutate(pct_maleasia = round(100 * male_asiaE / tot_asiaE, 1))
 ```
 
-```{r}
+```{r, echo=FALSE, message=FALSE}
 maleasia_palette <- colorNumeric(c("pink", "lightblue"),
                                 maleasia_Albany$pct_maleasia)
 
@@ -160,9 +145,5 @@ maleasia_map <- leaflet(maleasia_Albany) %>%
     opacity = 1)
 
 maleasia_map
-```
-
-```{r}
-
 ```
 
