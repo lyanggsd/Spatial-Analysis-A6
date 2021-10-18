@@ -89,6 +89,7 @@ Vacancy_map2 <- leaflet(Albany_Vacancy) %>%
 Vacancy_map2
 ```
 
+##This map shows the vacancy number in the area. What we can find is that the area near Middleburgh is the area with most vacant properties.
 ```{r, echo=FALSE, message=FALSE}
 Vacancy_map3 <- leaflet(Albany_Vacancy) %>%
   addProviderTiles("Stamen.TonerLite") %>%
@@ -127,6 +128,7 @@ maleasia_Albany <- maleasia_Albany %>%
   mutate(pct_maleasia = round(100 * male_asiaE / tot_asiaE, 1))
 ```
 
+##This map shows the male asian within total asian population in the area. As we can see, around Albany city and Troy city, most of the asians are males.
 ```{r, echo=FALSE, message=FALSE}
 maleasia_palette <- colorNumeric(c("pink", "lightblue"),
                                 maleasia_Albany$pct_maleasia)
