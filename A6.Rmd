@@ -126,37 +126,43 @@ Vacancy_map3
 saveWidget(Vacancy_map3, file="tory_vacancy.html")
 ```
 
+
+
 ```{r}
-wfh_Albany <- get_acs(geography = "tract", county = "Albany", state = "NY", 
+maleasia_Albany <- get_acs(geography = "tract", county = "Albany", state = "NY", 
                            year = 2019, survey = "acs5",
-                           variables = c(tot_wrkrs = "B08604_001", hm_wrkrs = "B08528_061"),
+                           variables = c(tot_asia = "B01001D_001", male_asia = "B01001D_002"),
                            output = "wide", geometry = TRUE) 
 ```
 
 ```{r}
-wfh_Albany <- wfh_Albany %>%
-  select(-tot_wrkrsM, -hm_wrkrsM) %>%
-  filter(tot_wrkrsE > 0) %>%
-  mutate(pct_wfh = round(100 * hm_wrkrsE / tot_wrkrsE, 1))
+maleasia_Albany <- maleasia_Albany %>%
+  select(-tot_asiaM, -male_asiaM) %>%
+  filter(tot_asiaE > 0) %>%
+  mutate(pct_maleasia = round(100 * male_asiaE / tot_asiaE, 1))
 ```
 
 ```{r}
-wfh_palette <- colorNumeric(c("pink", "lightblue"),
-                                wfh_Albany$pct_wfh)
+maleasia_palette <- colorNumeric(c("pink", "lightblue"),
+                                maleasia_Albany$pct_maleasia)
 
-wfh_map <- leaflet(wfh_Albany) %>%
+maleasia_map <- leaflet(maleasia_Albany) %>%
   addProviderTiles("Stamen.TonerLite") %>%
-  addPolygons(fillColor = ~wfh_palette(pct_wfh), weight = 1, color = "gray", fillOpacity = 0.7,
+  addPolygons(fillColor = ~maleasia_palette(pct_maleasia), weight = 1, color = "gray", fillOpacity = 0.7,
               highlightOptions = highlightOptions(fillColor = "yellow", fillOpacity = 0.9),
-              label = wfh_Albany$NAME,
-              popup = paste("Total workers: ", wfh_Albany$tot_wrkrsE, "<br/>",
-                            "wfh workers: ", wfh_Albany$hm_wrkrsE, " (",
-                            wfh_Albany$pct_wfh, "%)", sep = "")) %>%
-    addLegend("bottomright", pal = wfh_palette, values = ~pct_wfh,
-    title = "Percent of workers<br/>work from home",
+              label = maleasia_Albany$NAME,
+              popup = paste("Total asian: ", maleasia_Albany$tot_asiaE, "<br/>",
+                            "Male asian: ", maleasia_Albany$male_asiaE, " (",
+                            maleasia_Albany$pct_maleasia, "%)", sep = "")) %>%
+    addLegend("bottomright", pal = maleasia_palette, values = ~pct_maleasia,
+    title = "Percent of male<br/>in asian population",
     labFormat = labelFormat(suffix = "%"),
     opacity = 1)
 
-wfh_map
+maleasia_map
+```
+
+```{r}
+
 ```
 
